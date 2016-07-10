@@ -1,7 +1,7 @@
 # theano-deep-neural-net
 Deep neural network implementation using theano and lasagne
 
-Neural network implementation mostly based on the (mnist lasagne tutorial)[https://github.com/Lasagne/Lasagne/blob/master/examples/mnist.py]    
+Neural network implementation mostly based on the [mnist lasagne tutorial](https://github.com/Lasagne/Lasagne/blob/master/examples/mnist.py)    
 
 ## Use
 ```python
