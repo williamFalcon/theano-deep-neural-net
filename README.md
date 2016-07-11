@@ -7,18 +7,19 @@ Neural network implementation mostly based on the [mnist lasagne tutorial](https
 ```python
 from dnn.dnn import MLP
 
-# load data
 X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
 
-# init nn
-nn = MLP()
+# images are 28*28 pixels. Shown as a vector of 28*28 length
+# train algo
+nn = MLP(input_dim_count=28*28, output_size=10)
+nn.fit(X_train, y_train, X_val, y_val, X_test, y_test, epochs=50)
 
-# fit nn
-nn.fit(X_train, y_train, X_val, y_val, X_test, y_test)
+# predict on first 5 of test
+x_preds = X_test[0:5]
+ans = nn.predict(x_preds)
 
-# predict
-predictions = nn.predict(X_test[:5])
-print('Predictions: %s' % predictions)
-print('Actual: %s' % y_test[:5])
+# print prediction results
+print(ans)
+print(y_test[0:5])
 
 ```
