@@ -9,9 +9,9 @@ import lasagne
 
 class MLP(object):
 
-    def __init__(self, input_dim =(28, 28), output_size=10, batch_size=None, hidden_layers=[800, 800], drop_input_p=.2, drop_hidden_p=.5 ):
+    def __init__(self, input_dim_count, output_size, batch_size=None, hidden_layers=[800, 800], drop_input_p=.2, drop_hidden_p=.5 ):
         '''
-        input_dim =         N X M size of input matrix
+        input_dim_count =   Row length
         output_size =       Number of classes to classify
         batch_size =        SGD batch size
         theano_sym_var =    Symbolic var name for theano ex: 'x'
@@ -35,10 +35,10 @@ class MLP(object):
         self.batchsize = 0
 
         # theano inputs var
-        self.input_var = T.tensor4('inputs')
+        self.input_var = T.matrix('inputs')
 
         # 1. Input layer
-        network = lasagne.layers.InputLayer(shape=(batch_size, 1, input_dim[0], input_dim[1]), input_var=self.input_var)
+        network = lasagne.layers.InputLayer(shape=(batch_size, input_dim_count), input_var=self.input_var)
 
         # 2. Input dropout layer 
         #    (prevent overfitting by adding dropout layer with P(dropout) = p)
@@ -77,13 +77,14 @@ class MLP(object):
         for x in X:
 
             # make prediction and track
+            x = x.reshape(1, len(x))
             y_hat = predict_fn(x)
             predictions.append(y_hat)
         
         return predictions
 
 
-    def fit(self, X_train, y_train, X_val, y_val, X_test, y_test, epochs=15, batchsize=500, learning_rate=0.01, momentum=0.9):
+    def fit(self, X_train, y_train, X_val, y_val, X_test, y_test, epochs=500, batchsize=500, learning_rate=0.01, momentum=0.9):
         self.batchsize = batchsize
         self.epochs = epochs
         
@@ -195,8 +196,7 @@ class MLP(object):
         # parameters at each training step. Here, we'll use Stochastic Gradient
         # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
         params = lasagne.layers.get_all_params(self.network, trainable=True)
-        updates = lasagne.updates.nesterov_momentum(
-                loss, params, learning_rate, momentum)
+        updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate, momentum)
 
         return updates
 
@@ -230,7 +230,6 @@ class MLP(object):
         if shuffle:
             indices = np.arange(len(inputs))
             np.random.shuffle(indices)
-
 
         for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
             if shuffle:

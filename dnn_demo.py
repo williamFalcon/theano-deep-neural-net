@@ -2,58 +2,37 @@
 import sys
 import os
 from dnn.dnn import MLP
+import pandas as pd
 import numpy as np
 
+
 def load_dataset():
-    # We first define a download function, supporting both Python 2 and 3.
-    if sys.version_info[0] == 2:
-        from urllib import urlretrieve
-    else:
-        from urllib.request import urlretrieve
+    data_path = os.path.dirname(os.path.realpath(__file__)) + '/db/train.csv'
+    train_df = pd.read_csv(data_path)
 
-    def download(filename, source='http://yann.lecun.com/exdb/mnist/'):
-        print("Downloading %s" % filename)
-        urlretrieve(source + filename, filename)
+    # extract the x and y for the models
+    # format for the nn
+    X = train_df.values[:, 1:] / np.float32(256)
+    Y = train_df.values[:, 0].astype(np.int32)
 
-    # We then define functions for loading MNIST images and labels.
-    # For convenience, they also download the requested files if needed.
-    import gzip
+    val_size = 10000
+    tng_end = (.80 * len(X)) - val_size
+    val_end = tng_end + val_size
 
-    def load_mnist_images(filename):
-        if not os.path.exists(filename):
-            download(filename)
-        # Read the inputs in Yann LeCun's binary format.
-        with gzip.open(filename, 'rb') as f:
-            data = np.frombuffer(f.read(), np.uint8, offset=16)
-        # The inputs are vectors now, we reshape them to monochrome 2D images,
-        # following the shape convention: (examples, channels, rows, columns)
-        data = data.reshape(-1, 1, 28, 28)
-        # The inputs come as bytes, we convert them to float32 in range [0,1].
-        # (Actually to range [0, 255/256], for compatibility to the version
-        # provided at http://deeplearning.net/data/mnist/mnist.pkl.gz.)
-        return data / np.float32(256)
+    # tng data 70%
+    X_train = X[0:tng_end]
+    y_train = Y[0:tng_end]
 
-    def load_mnist_labels(filename):
-        if not os.path.exists(filename):
-            download(filename)
-        # Read the labels in Yann LeCun's binary format.
-        with gzip.open(filename, 'rb') as f:
-            data = np.frombuffer(f.read(), np.uint8, offset=8)
-        # The labels are vectors of integers now, that's exactly what we want.
-        return data
+    # validation
+    # 20%
+    X_val = X[tng_end: val_end]
+    y_val = Y[tng_end: val_end]
 
-    # We can now download and read the training and test set images and labels.
-    X_train = load_mnist_images('train-images-idx3-ubyte.gz')
-    y_train = load_mnist_labels('train-labels-idx1-ubyte.gz')
-    X_test = load_mnist_images('t10k-images-idx3-ubyte.gz')
-    y_test = load_mnist_labels('t10k-labels-idx1-ubyte.gz')
+    # test accuracy of classifier
+    # 10%
+    X_test = X[val_end:]
+    y_test = Y[val_end:]
 
-    # We reserve the last 10000 training examples for validation.
-    X_train, X_val = X_train[:-10000], X_train[-10000:]
-    y_train, y_val = y_train[:-10000], y_train[-10000:]
-
-    # We just return all the arrays in order, as expected in main().
-    # (It doesn't matter how we do this as long as we can read them again.)
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
@@ -62,8 +41,17 @@ def run_demo():
     print("Loading data...")
     X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
 
-    nn = MLP()
-    nn.fit(X_train, y_train, X_val, y_val, X_test, y_test)
+    # images are 28*28 pixels. Shown as a vector of 28*28 length
+    nn = MLP(input_dim_count=28*28, output_size=10)
+    nn.fit(X_train, y_train, X_val, y_val, X_test, y_test, epochs=50)
+
+    # predict on first 5 of test
+    x_preds = X_test[0:5]
+    ans = nn.predict(x_preds)
+
+    # print prediction results
+    print(ans)
+    print(y_test[0:5])
 
 
 if __name__ == '__main__':
